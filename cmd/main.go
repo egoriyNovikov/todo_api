@@ -1,27 +1,29 @@
 package main
 
 import (
+	"egoriynovikov/todo_api/internal/config"
+	"egoriynovikov/todo_api/internal/db"
+	"egoriynovikov/todo_api/internal/router"
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 )
 
 func main() {
-
-	port := os.Getenv("PORT")
+	cfgd := config.GetConfigDB()
+	fmt.Println(cfgd)
+	cfgs := config.GetConfigServer()
+	port := cfgs.Port
+	db, err := db.Connect(cfgd)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
 	if port == "" {
 		port = "8080"
 	}
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Todo API работает на порту %s", port)
-	})
-
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, "OK")
-	})
+	router.NewRouter(port)
 
 	log.Printf("Сервер запущен на порту %s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
